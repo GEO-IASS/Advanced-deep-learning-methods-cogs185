@@ -32,34 +32,39 @@ from sklearn.multiclass import OneVsRestClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import LinearSVC
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import accuracy_score
 xTrain, xTest, yTrain, yTest = loadData()
 
 adaboost = AdaBoostClassifier(base_estimator = DecisionTreeClassifier(max_depth = 2))
 randomforest = RandomForestClassifier() 
 
 ESTIMATORS = { 
-    'SVM-OVA': LinearSVC(loss="squared_hinge", penalty="l2", C=1000, dual=False, tol=1e-3),
-    'SVM-EXPLICIT': LinearSVC(loss="squared_hinge", penalty='l2', C=1000, dual=False, tol = 1e-3, multi_class='crammer_singer'),
-    'RANDOMFOREST-OVA': OneVsRestClassifier(estimator = randomforest),
-    'RANDOMFOREST-EXPLICIT': RandomForestClassifier(),
-    'BOOSTING-OVA': OneVsRestClassifier(estimator = adaboost)
+#    'SVM-OVA': LinearSVC(loss="squared_hinge", penalty="l2", C=1000, dual=False, tol=1e-3),
+#    'SVM-EXPLICIT': LinearSVC(loss="squared_hinge", penalty='l2', C=1000, dual=False, tol = 1e-3, multi_class='crammer_singer'),
+#    'BOOSTING-OVA': OneVsRestClassifier(estimator = adaboost),
+    'BOOSTING-EXPLICIT': AdaBoostClassifier(base_estimator = DecisionTreeClassifier(max_depth = 2), n_estimators = 128),
+#    'RANDOMFOREST-OVA': OneVsRestClassifier(estimator = randomforest),
+#    'RANDOMFOREST-EXPLICIT': RandomForestClassifier(),
 }
 GRIDS = {
         'SVM-OVA': {
-                        'C': [0.1, 1, 10, 100]
+                        'C': [0.1, 1, 10, 100, 1000, 10000]
                 },
         'SVM-EXPLICIT': {
-                        'C': [0.1, 1, 10, 100]
+                        'C': [0.1, 1, 10, 100, 1000, 10000]
                 },
         'BOOSTING-OVA': {
                         'estimator__n_estimators': [2, 4, 8, 16, 32, 64, 128]
                 },
+        'BOOSTING-EXPLICIT': {
+                        'n_estimators': [2, 4, 8, 16, 32, 64, 128]
+                },
         'RANDOMFOREST-OVA': {
-                        'estimator__n_estimators': [2, 4, 8, 16, 32, 64, 128]
+                        'estimator__n_estimators': [2, 4, 8, 16, 32, 64, 128, 256]
                 },
         'RANDOMFOREST-EXPLICIT': {
-                        'n_estimators': [2, 4, 8, 16, 32, 64, 128]
-                }
+                        'n_estimators': [2, 4, 8, 16, 32, 64, 128, 256]
+                },
 }
 
 print("Training Classifiers")
@@ -67,6 +72,7 @@ print("====================")
 for name in ESTIMATORS:
     print("Training %s ... " % name)
     estimator = ESTIMATORS[name]
-    CV = GridSearchCV(estimator, param_grid=GRIDS[name], cv=5, n_jobs=-1 , verbose = 4)
-    CV.fit(xTrain, yTrain)
-    print ("Model accuracy: " + str(CV.score(xTest, yTest)))
+    
+    estimator.fit(xTrain, yTrain)
+    for predict in estimator.staged_predict(xTest):
+        print ("Model accuracy: " + str(accuracy_score(predict, yTest)))
